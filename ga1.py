@@ -8,7 +8,7 @@ POPULATION_SIZE = 50
 
 MUTATION_RATE = 0.01
 
-SELECTION = "tournament" #tournament, roulette, rank
+SELECTION = "rank" #tournament, roulette, rank
 CROSSOVER = "one" # One point, Two-point Crossover
 MUTATION = "bitwise" #bitwise
 
@@ -121,6 +121,8 @@ def rouletteSelection():
 
 def rankSelection():
     return_children = [None, None]
+
+    for children in range(len(return_children)):
 
     return return_children
 

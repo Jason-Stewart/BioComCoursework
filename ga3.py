@@ -5,7 +5,15 @@ import sys
 
 POPULATION_SIZE = 100
 RULES = 10
-MUTATION_RATE = 0.130
+MUTATION_RATE = 0.110
+
+CHOOSE = [
+    {0:"tournament", 1:"one", 2:"bitwise"},
+    {0:"roulette", 1:"one", 2:"bitwise"},
+    {0:"rank", 1:"one", 2:"bitwise"},
+]
+
+PICK = CHOOSE[0]
 
 class dataSet(object):
     def __init__(self):
@@ -23,6 +31,7 @@ class Individual(object):
     def __init__(self):
         self.ruleSet = [RuleSet() for _ in range(10)]
         self.fitness = 0
+        self.fitness2 = 0
 
     def printOut(self):
         print "\n Individual: \n"
@@ -84,6 +93,7 @@ RULESET = [Individual() for _ in range(POPULATION_SIZE)]
 TRAINING_DATA = [dataSet() for _ in range(1000)]
 TEST_DATA = [dataSet() for _ in range(1000)]
 BESTINDIVIDUAL = Individual()
+BESTINDIVIDUALTESTING = Individual()
 
 # Function: randomNumber
 # Return a random number between 0 and 1 with 6 decimal point
@@ -150,6 +160,21 @@ def rouletteSelection():
     
     return return_children
 
+def rankSelection():
+    return_children = [None, None]
+
+    rankTotal = (POPULATION_SIZE * (POPULATION_SIZE + 1)) / 2
+
+    for children in range(len(return_children)):
+        p = uniform(0, rankTotal)
+        for i, f in enumerate(RULESET[:]):
+            if p < 0:
+                break
+            p -= (POPULATION_SIZE - i);
+        return_children[children] = deepcopy(f)
+
+    return return_children
+
 def crossover(parents):
     children = [];
 
@@ -199,7 +224,7 @@ def Evaluate(individual_solution):
 
     fitness = 0
 
-    for td in TRAINING_DATA[:]:
+    for td in TEST_DATA[:]:
         for i in individual_solution.ruleSet[:]:
             correct = 0
             for condition_count, c in enumerate(td.condition[:]):
@@ -216,6 +241,29 @@ def Evaluate(individual_solution):
 
     if individual_solution.fitness > BESTINDIVIDUAL.fitness:
         BESTINDIVIDUAL = deepcopy(individual_solution)
+
+def EvaluateTesting(individual_solution):
+    global BESTINDIVIDUALTESTING, TRAINING_DATA
+
+    fitness = 0
+
+    for td in TRAINING_DATA[:]:
+        for i in individual_solution.ruleSet[:]:
+            correct = 0
+            for condition_count, c in enumerate(td.condition[:]):
+                if float(c) >= i.rules[condition_count].low() and float(c) <= i.rules[condition_count].high():
+                    correct += 1;
+                    continue;
+
+            if correct == 6:
+                if str(td.out) == str(i.out):
+                    fitness += 1;
+                break;
+
+    individual_solution.fitness2 = int(fitness)
+
+    if individual_solution.fitness2 > BESTINDIVIDUAL.fitness2:
+        BESTINDIVIDUALTESTING = deepcopy(individual_solution)
 
 def main():
     global RULESET
@@ -259,7 +307,15 @@ def main():
 
         while len(child_population) < POPULATION_SIZE:
             # Selection
-            parent = rouletteSelection()
+            if PICK[0] == "rank":
+                print "Rank"
+                parent = rankSelection()
+            elif PICK[0] == "roulette":
+                print "roulette"
+                parent = rouletteSelection()
+            else:
+                print "tournament"
+                parent = tournamentSelection(2)
 
             # Crossover
             children = crossover(parent)
@@ -277,20 +333,25 @@ def main():
         RULESET += child_population
         RULESET.sort(key=lambda x: x.fitness, reverse=True)
 
-        print BESTINDIVIDUAL.fitness
-        print BESTINDIVIDUAL.printOut()
+        #print BESTINDIVIDUAL.fitness
+        #print BESTINDIVIDUAL.printOut()
 
         for i in range(POPULATION_SIZE):
             RULESET.pop()
 
-        print ("\nGenerations: "+ str(generations) + "\n\n")
+        #print ("\nGenerations: "+ str(generations) + "\n\n")
 
         printString = ""
 
-        for i in RULESET[:]:
-            printString += str(i.fitness) + ", "
+        if ((generations % 10) == 0):
+            for i in RULESET[:]:
+                EvaluateTesting(i)
+            print str(BESTINDIVIDUAL.fitness) + ", " + str(BESTINDIVIDUALTESTING.fitness2)
 
-        print printString
+            #printString += str(i.fitness) + ", "
+
+        #print printString
+        #print generations
         generations += 1
         
 

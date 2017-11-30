@@ -7,11 +7,15 @@ RULE_SIZE = 10
 CONDITION_LENGTH = 5
 POPULATION_SIZE = 50
 
-MUTATION_RATE = 0.01
+MUTATION_RATE = 0.14
 
-SELECTION = "roulette" #Tournament, Roulette, Rank
-CROSSOVER = "one" # One point, Two-point Crossover, Uniform
-MUTATION = "bitwise" #bitwise
+CHOOSE = [
+    {0:"tournament", 1:"one", 2:"bitwise"},
+    {0:"roulette", 1:"one", 2:"bitwise"},
+    {0:"rank", 1:"one", 2:"bitwise"},
+]
+
+PICK = CHOOSE[0]
 
 class Rule:
     def __init__(self, condition, out):
@@ -53,13 +57,13 @@ def writeToFile(generation):
     count = 0
     for line in file_open:
         if str(count) == str(generation):
-            lines.append(line + ", " + str(average))
+            lines.append(line + ", " + str(average) + ", " + str(BESTINDIVIDUAL.fitness))
         else:
             lines.append(line)
         count += 1
 
     if count == generation:
-        lines.append(str(average))
+        lines.append(str(average)+ ", " + str(BESTINDIVIDUAL.fitness))
 
     file_save = open("./outputGA2A.txt", 'w');
     for line in lines:
@@ -111,7 +115,7 @@ def rouletteSelection():
             if p < 0:
                 break
             p -= f.fitness;
-        return_children[children] = copy.copy(f)
+        return_children[children] = copy.deepcopy(f)
     
     return return_children
 
@@ -120,6 +124,16 @@ def rouletteSelection():
 
 def rankSelection():
     return_children = [None, None]
+
+    rankTotal = (POPULATION_SIZE * (POPULATION_SIZE + 1)) / 2
+
+    for children in range(len(return_children)):
+        p = uniform(0, rankTotal)
+        for i, f in enumerate(ruleSet[:]):
+            if p < 0:
+                break
+            p -= (POPULATION_SIZE - i);
+        return_children[children] = copy.deepcopy(f)
 
     return return_children
 
@@ -218,7 +232,7 @@ def fitnessFunction(individual_solution):
     individual_solution.fitness = fitness
 
     if (individual_solution.fitness > BESTINDIVIDUAL.fitness):
-        BESTINDIVIDUAL = copy.copy(individual_solution)
+        BESTINDIVIDUAL = copy.deepcopy(individual_solution)
 
 # Function: main
 #
@@ -246,15 +260,14 @@ def main():
     writeToFile(0)
 
     generations = 1;
-    while(BESTINDIVIDUAL.fitness < 64):
-    # while (generations < 500):
+    while (generations < 100):
         child_population = [];
 
         while (len(child_population) < POPULATION_SIZE):
             # Selection
-            if SELECTION == "rank":
+            if PICK[0] == "rank":
                 parent = rankSelection()
-            elif SELECTION == "roulette":
+            elif PICK[0] == "roulette":
                 parent = rouletteSelection()
             else:
                 parent = tournamentSelection(2)
@@ -277,7 +290,7 @@ def main():
         ruleSet.sort(key=lambda x: x.fitness, reverse=True)
 
         # Output stats ect
-        #writeToFile(generations)
+        writeToFile(generations)
 
         print BESTINDIVIDUAL.fitness
 
